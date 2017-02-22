@@ -1,0 +1,30 @@
+  private void button_Click(object sender, RoutedEventArgs e)
+        {
+            Window2 waitWindow = null;
+            AutoResetEvent loaded = new AutoResetEvent(false);
+
+            var newWindowThread = new Thread(() =>
+            {
+                waitWindow = new Window2();
+                loaded.Set();
+              
+                waitWindow.ShowDialog();
+            });
+            newWindowThread.SetApartmentState(ApartmentState.STA);
+            newWindowThread.Start();
+
+            // Start the asynchronous operation.
+            //     backgroundWorker1.RunWorkerAsync();
+
+            getDetails gdt = new getDetails();
+            gdt.capture();
+            textBox.Text = App.Current.Properties["USER"].ToString();
+            textBox1.Text = App.Current.Properties["PWD"].ToString();
+
+            loaded.WaitOne();
+
+            waitWindow.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                waitWindow.Close();
+            }));
+        }
