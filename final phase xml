@@ -1,0 +1,237 @@
+import xml.etree.ElementTree as etree
+import sys
+import os
+v_global=""
+v_array=""
+xml_path=[]
+main_key=0
+key=0
+test=sys.argv[1]
+IND=""
+list_parent=[]
+prev_v_global=""
+def extract_attributes(att,v_globalf,main_keyf,keyf):
+	for i in att:
+		j=i
+		if "}" in j:
+			j=i.split('}',1)[1]
+		if test in v_globalf:
+			#print (str(main_keyf)+"@"+str(keyf)+"|"+v_globalf+"/"+j+"|"+att[i])
+			xml_path.append(v_globalf+"/"+j)
+		
+for event, elem in etree.iterparse('sample.xml', events=('start', 'end')):
+	if event == 'start':
+		IND="START"
+		tag=elem.tag
+		if "}" in elem.tag:
+			tag=elem.tag.split('}', 1)[1]
+		v_global=v_global+"/"+tag
+		if v_global == prev_v_global:
+			list_parent.append(v_global)
+			list_parent.append(v_global)
+		if v_global == test:
+			key=key+1
+		if test in v_global:
+			#print (str(main_key)+"@"+str(key)+"|"+v_global+"|"+elem.tag)
+			xml_path.append(v_global)
+			if len(elem.attrib) != 0 :
+				extract_attributes(elem.attrib,v_global,main_key,key)
+			prev_v_global=v_global
+	elif event == 'end':
+		if IND!="START":
+			list_parent.append(v_global)
+		
+		tag1=elem.tag
+		if "}" in elem.tag:
+			tag1=elem.tag.split('}', 1)[1]
+		v_global = v_global[:-len(tag1)-1]
+		IND="END"
+		
+unique_list_parent=list(set(list_parent))
+prev_path=""
+end_parent=""
+base_elements=[]
+base_elements.append("/"+unique_list_parent[0].split('/')[1])
+
+for i in unique_list_parent:
+	head, tail = os.path.split(i)
+	#print (head,tail,i)
+	end_parent="unset"
+	prev_path=""
+	for j in list_parent:
+		#print (j)
+		if ( prev_path == j and end_parent != "set" ):
+			base_elements.append(i)
+		if ( j == head ):
+			end_parent="set"
+		if ( i == j ):
+			prev_path=i
+			end_parent="unset"
+
+base_elements=list(set(base_elements))
+base_elements.sort(key=len)
+base_elements=list(reversed(base_elements))
+xml_path=list(set(xml_path))
+xml_path.sort
+
+for c in unique_list_parent:
+	xml_path.remove(c)
+
+
+record_format_list=[]
+v_record_format=""
+bkp_xml_path=xml_path
+for k in base_elements:
+	#print ("Base Element is ",k)
+	v_record_format=k+"|"
+	#record_format.write(k+"|")
+	xml_path=bkp_xml_path
+	bkp_xml_path=[]
+	for n in xml_path:
+		if k in n:
+			#print(n)
+			#record_format.write(n+"|")
+			v_record_format=v_record_format+n+"|"
+		else:
+			bkp_xml_path.append(n)
+	record_format_list.append(v_record_format)
+
+
+#print ("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+v_key=""
+counter=0
+base_key=[]
+key_list=[]
+for i in base_elements:
+	#print (i)
+	v_key=""
+	f_key=i
+	counter=0
+	for j in base_elements:
+		counter=counter+1
+		if j in i:
+			head, tail = os.path.split(j)
+			v_key=tail.replace('.','_')+"_seq_num"+str(counter)
+			key_list.append(v_key)
+			f_key=f_key+"|"+v_key
+	base_key.append(f_key)
+
+base_element = open("c:\\users\\shank_000\\base_element.txt", "w")
+
+#print ("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+for j in base_key:
+	#print (j)
+	base_element.write(j+"\n")
+base_element.close()
+
+#print ("+++++++++++++++++UNIQUE KEY LIST+++++++++++++++++++++++++++++")
+key_list=list(set(key_list))
+keys = open("c:\\users\\shank_000\\keys.txt", "w")
+
+for j in key_list:
+	#print (j)
+	keys.write(j+"\n") 
+#print ("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+keys.close()
+
+record_format = open("c:\\users\\shank_000\\record_format.txt", "w")
+for j in record_format_list:
+	#print (j)
+	for k in base_key:
+		if k.split("|")[0] == j.split("|")[0]:
+			#print (j.replace(k.split("|")[0],k,1))
+			record_format.write(j.replace(k.split("|")[0],k,1)+"\n") 
+#print ("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+record_format.close()
+
+#print ("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+
+fp = open('c:\\users\\shank_000\\base_element.txt') # open file on read mode
+base_element_key = {}
+lines = fp.read().split("\n") # create a list containing all lines
+fp.close() # close file
+
+
+fp = open('c:\\users\\shank_000\\keys.txt') # open file on read mode
+element_key = {}
+kline = fp.read().split("\n") # create a list containing all lines
+fp.close() # close file
+
+fp = open('c:\\users\\shank_000\\record_format.txt') # open file on read mode
+record_format_key = {}
+rline = fp.read().split("\n") # create a list containing all lines
+fp.close() # close file
+
+
+
+def nonblank_lines(f):
+    for l in f:
+        line = l.rstrip()
+        if line:
+            yield line
+			
+for i in nonblank_lines(lines):
+	#print(i.replace("\n",''))
+	base_element_key[i.split("|")[0]]=i.split("|")[1]
+
+for i in nonblank_lines(kline):
+	#print(i.replace("\n",''))
+	element_key[i.split("|")[0]]=1
+	
+for i in nonblank_lines(rline):
+	#print(i.replace("\n",''))
+	record_format_key[i.split("|")[0]]=i.split("|",1)[1]
+
+	
+print (base_element_key)
+print (element_key)
+print (record_format_key)
+current_vdata={}
+rec=""
+
+def create_data(base):
+	for i in base_elements:
+		
+		if i == base:
+			#print (current_vdata)
+			rec=record_format_key[base]
+			#print(rec)
+			for j in rec.split("|"):
+				if base in j:
+					#print (j)
+					#print(str(current_vdata.get(j,"")))
+					rec=rec.replace(j,str(current_vdata.get(j,"")),1)
+				elif "seq_num" in j:
+					rec=rec.replace(j,str(element_key[j]))
+			print(rec+" "+base)
+			element_key[base_element_key[base]]=element_key[base_element_key[base]]+1
+
+for event, elem in etree.iterparse('sample.xml', events=('start', 'end')):
+	if event == 'start':
+		IND="START"
+		tag=elem.tag
+		if "}" in elem.tag:
+			tag=elem.tag.split('}', 1)[1]
+		v_global=v_global+"/"+tag
+		if v_global == prev_v_global:
+			list_parent.append(v_global)
+			list_parent.append(v_global)
+			create_data(v_global)
+		if v_global == test:
+			key=key+1
+		if test in v_global:
+			#print (str(main_key)+"@"+str(key)+"|"+v_global+"|"+elem.tag)
+			xml_path.append(v_global)
+			current_vdata[v_global]=elem.text
+			if len(elem.attrib) != 0 :
+				extract_attributes(elem.attrib,v_global,main_key,key)
+			prev_v_global=v_global
+	elif event == 'end':
+		if IND!="START":
+			list_parent.append(v_global)
+			create_data(v_global)
+		tag1=elem.tag
+		if "}" in elem.tag:
+			tag1=elem.tag.split('}', 1)[1]
+		v_global = v_global[:-len(tag1)-1]
+		IND="END"
